@@ -1,7 +1,7 @@
 class Surface {
-  PShape   s; //surface
+  PShape[] s = new PShape[2]; //surface [0] real and [1] is imaginary
   int      d; //dimension 
-  boolean  roi = true; //real or imaginary   
+  int      roi = 0; //real 0 or imaginary 1   
 
   Surface(int dim) {
     d = dim;
@@ -10,42 +10,61 @@ class Surface {
 
 
   void createSurface() {
-    s = createShape(GROUP);
+    s[0] = createShape(GROUP); 
+    s[1] = createShape(GROUP);
 
-    for (float z=-d; z<d; z++) {
-      PShape c; //curve with thickness dz
-      c = createShape(GROUP);
+    for (float z=-d; z<d; z++) { //go from -dim to dim
+      PShape cr, ci; //curve real and imaginary
+      cr = createShape(GROUP);
+      ci = createShape(GROUP);
 
       for (float x=-d; x<d; x++) {
-        PShape p; //point with thickness dz dx
-        float y1, y2, y3, y4; //heights for the corners of the point
+        PShape pr, pi; //point real and imaginary
+        Complex[] y = new Complex[4]; //heights for the corners of the point
         color clr;  //color of the fill
 
-        y1= xsqr(x, z);
-        y2= xsqr(x+1, z);
-        y3= xsqr(x+1, z+1);
-        y4= xsqr(x, z+1);
+        //Get heights
+        y[0] = getYFor(x, z);
+        y[1] = getYFor(x+1, z);
+        y[2] = getYFor(x+1, z+1);
+        y[3] = getYFor(x, z+1);
 
-        clr = getColorFor(y1);
-        p = createShape();
-
-        p.beginShape();
-        p.fill(clr, 100);  //set fill color and opacity
-        p.stroke(clr, 100);  //set outline color and opacity
-        p.strokeWeight(1);
-
-        if (y1<dim && y1>-dim && y4<dim && y4>-dim) { //Only add vertex if inside of the square
-          p.vertex(x, y1, z);
-          p.vertex(x+1, y2, z);
-          p.vertex(x+1, y3, z+1);
-          p.vertex(x, y4, z+1);
+        //Create real curve
+        clr = getColorFor(y[0].re);
+        pr = createShape();
+        pr.beginShape();
+        pr.fill(clr, 100);  //set fill color and opacity
+        pr.stroke(clr, 100);  //set outline color and opacity
+        pr.strokeWeight(1);
+        if (heightIsInBox(y[0].re, y[3].re, dim)) { //Only add vertex if inside of the square
+          pr.vertex(x, y[0].re, z);
+          pr.vertex(x+1, y[1].re, z);
+          pr.vertex(x+1, y[2].re, z+1);
+          pr.vertex(x, y[3].re, z+1);
         }
-
-        p.endShape(CLOSE); //connect last vertex with first
-        c.addChild(p); //add the points to the curve (many points added up make a curve)
+        pr.endShape(CLOSE); //end the square shape
+        cr.addChild(pr); //add the points to the curve (many points added up make a curve)
+        
+        //Create imaginary curve
+        clr = getColorFor(y[0].im);
+        pi = createShape();
+        pi.beginShape();
+        pi.fill(clr, 100);  //set fill color and opacity
+        pi.stroke(clr, 100);  //set outline color and opacity
+        pi.strokeWeight(1);
+        if (heightIsInBox(y[0].im, y[3].im, dim)) { //Only add vertex if inside of the square
+          pi.vertex(x, y[0].im, z);
+          pi.vertex(x+1, y[1].im, z);
+          pi.vertex(x+1, y[2].im, z+1);
+          pi.vertex(x, y[3].im, z+1);
+        }
+        pi.endShape(CLOSE); //end the square shape
+        ci.addChild(pi); //add the points to the curve (many points added up make a curve)
+        
       }
 
-      s.addChild(c); //add curve to surface (many curves added up make a surface)
+      s[0].addChild(cr); //add curve to surface (many curves added up make a surface)
+      s[1].addChild(ci); //add curve to surface (many curves added up make a surface)
     }
   }
 
@@ -78,19 +97,21 @@ class Surface {
     return clr;
   }
 
-  float xsqr(float x, float z) {
+  Complex getYFor(float x, float z) {
     Complex c = new Complex(x, z);
-    c = c.Cos(25, dim);
+    c = c.Cos(d/4, dim);
+    return c;
+  }
 
-
-    if (roi) {
-      return c.re;
+  boolean heightIsInBox(float y1, float y2, int dim) {
+    if (y1<dim && y1>-dim && y2<dim && y2>-dim) {
+      return true;
     } else {
-      return c.im;
+      return false;
     }
   }
 
   void draw() {
-    shape(s, 0, 0); //draw shape at point 0,0
+    shape(s[roi], 0, 0); //draw shape at point 0,0
   }
 }
