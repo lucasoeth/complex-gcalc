@@ -1,10 +1,14 @@
 class Surface {
   PShape[] s = new PShape[2]; //surface [0] real and [1] is imaginary
   int      d; //dimension 
+  float    xS,yS,zS; //scale
   int      roi = 0; //real 0 or imaginary 1   
 
-  Surface(int dim) {
-    d = dim;
+  Surface(float xScale,float yScale,float zScale) {
+    d = width/4;
+    xS = xScale;
+    yS = yScale;
+    zS = zScale;
     createSurface();
   }
 
@@ -15,19 +19,27 @@ class Surface {
 
     for (float z=-d; z<d; z++) { //go from -dim to dim
       PShape cr, ci; //curve real and imaginary
+      float sz, szp; //scaled z and scaled z plus one
+      
       cr = createShape(GROUP);
       ci = createShape(GROUP);
+      sz = map(z,-dim,dim,-zS,zS);
+      szp = map(z+1,-dim,dim,-zS,zS);
 
       for (float x=-d; x<d; x++) {
         PShape pr, pi; //point real and imaginary
+        float sx, sxp; //scaled x and scaled x plus one
         Complex[] y = new Complex[4]; //heights for the corners of the point
         color clr;  //color of the fill
+        
+        sx = map(x,-dim,dim,-xS,xS);
+        sxp = map(x+1,-dim,dim,-xS,xS);
 
         //Get heights
-        y[0] = getYFor(x, z);
-        y[1] = getYFor(x+1, z);
-        y[2] = getYFor(x+1, z+1);
-        y[3] = getYFor(x, z+1);
+        y[0] = getYFor(sx, sz);
+        y[1] = getYFor(sxp, sz);
+        y[2] = getYFor(sxp, szp);
+        y[3] = getYFor(sx, szp);
 
         //Create real curve
         clr = getColorFor(y[0].re);
@@ -99,8 +111,8 @@ class Surface {
 
   Complex getYFor(float x, float z) {
     Complex c = new Complex(x, z);
-    c = c.Cos(d/4, dim);
-    return c;
+    c = c.Cos();
+    return c.Scale(yS,d);
   }
 
   boolean heightIsInBox(float y1, float y2, int dim) {
